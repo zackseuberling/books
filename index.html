@@ -1,0 +1,117 @@
+<!DOCTYPE >
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Books</title>
+    <style type="text/css">
+      html,
+      input {
+        font-family: Menlo, monospace;
+        font-size: 16px;
+      }
+      .sr-hidden {
+        clip: rect(1px, 1px, 1px, 1px);
+        clip-path: inset(50%);
+        height: 1px;
+        width: 1px;
+        margin: -1px;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+      }
+      header {
+        display: flex;
+        align-items: center;
+      }
+      input[name="filter"] {
+        margin-left: 2rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+      tr td:nth-child(1) {
+        width: 5%;
+      }
+      tr td:nth-child(2) {
+        width: 70%;
+      }
+      tr td:nth-child(3) {
+        width: 25%;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Books read since 2016</h1>
+      <label for="filter" class="sr-hidden">Filter books</label>
+      <input
+        type="search"
+        name="filter"
+        placeholder="Filter"
+        style="display: none"
+      />
+    </header>
+    <script src="https://d3js.org/d3-dsv.v1.min.js"></script>
+    <script src="https://d3js.org/d3-fetch.v1.min.js"></script>
+    <script type="text/javascript">
+      const YEARS = [2021, 2020, 2019, 2018, 2017, 2016];
+      const COLUMNS = ["Year", "Title", "Author"];
+      Promise.all(
+        YEARS.map((year) => {
+          return new Promise((resolve) => {
+            d3.csv(`${year}.csv`).then((rows) => {
+              resolve({ year, rows });
+            });
+          });
+        })
+      )
+        .then((years) => {
+          return years.map((year) => {
+            return year.rows.map((row) => {
+              row.Year = year.year;
+              return row;
+            });
+          });
+        })
+        .then((years) => years.map((year) => year.reverse()))
+        .then((years) => years.flat())
+        .then((rows) => {
+          const table = document.createElement("table");
+
+          rows.forEach((row) => {
+            const tr = table.insertRow(-1);
+            COLUMNS.forEach((key) => {
+              const td = tr.insertCell(-1);
+              td.innerText = row[key];
+              td.classList.add(key);
+            });
+          });
+
+          const filter = document.querySelector("input[name=filter]");
+          filter.value = "";
+
+          filter.addEventListener("keyup", ({ target: { value } }) => {
+            if (value.trim() === "") {
+              table.querySelectorAll("tr").forEach((tr) => {
+                tr.removeAttribute("style");
+              });
+              return;
+            }
+
+            table.querySelectorAll("tr").forEach((tr) => {
+              const isVisible = [...tr.querySelectorAll("td")].find((td) => {
+                return td.innerText.toLowerCase().includes(value.toLowerCase());
+              });
+              tr.style.display = !isVisible ? "none" : "";
+            });
+          });
+
+          document.body.appendChild(table);
+          filter.removeAttribute("style");
+        });
+    </script>
+  </body>
+</html>
